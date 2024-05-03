@@ -1,0 +1,15 @@
+# LeetCode session and CSRF token can be obtained by going into a signed-in session of LeetCode, going to the Inspect > Application > Cookies and copying the values of `LEETCODE_SESSION` and `csrftoken` respectively.
+LEETCODE_SESSION = 
+
+CSRF_TOKEN = 
+
+
+# Google API key for Gemini AI, can be obtained from https://aistudio.google.com/app/prompts/new_chat/?utm_source=hackathon&utm_medium=referral&utm_campaign=DevPost&utm_content
+GOOGLE_API_KEY = 
+
+# OpenAI API key can be obtained from https://platform.openai.com/account/api-keys
+OPENAI_API_KEY = 
+
+# OpenAI Organization ID
+ORGANIZATION_ID = 
+

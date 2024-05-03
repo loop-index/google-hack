@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block extracss %}
+<style>
+    #content-container {
+        height: 85vh;
+    }
+</style>
+{% endblock %}
+
+{% block extrajs %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.33.1/ace.min.js" integrity="sha512-58PBCIyyhiDe1VEw2ouZsbUaGzY5vlEXV/WgqGXssAt2sOxRr+g2AxUQ9gsCXFsB8YuTOty6T77aqNmkWCFSog==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid h-100" id="problem-container">
+    <div class="row h-100 pt-2">
+        <div class="col-3 h-100 px-2">
+            <div class="d-flex flex-column h-100 bg-dark-subtle rounded p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="d-flex align-items-center font-theme">
+                        <p class="fs-4 m-0 me-2">{{ problem_data['problem_title'] }}</p>
+                        <span class="badge bg-dark">
+                        {% if problem_data['problem_difficulty'] == 'Easy' %}
+                            <span class="text-success">Easy</span>
+                        {% elif problem_data['problem_difficulty'] == 'Medium' %}
+                            <span class="text-warning">Medium</span>
+                        {% elif problem_data['problem_difficulty'] == 'Hard' %}
+                            <span class="text-danger">Hard</span>
+                        {% endif %}
+                        </span>
+                    </span>
+                    <span>
+                        <a href="{{ problem_data['problem_link'] }}" target="_blank" class="link-warning text-decoration-none">
+                            <i class="fa-solid fa-external-link me-2"></i>
+                        </a>
+                    </span>
+                </div>
+                <div class="text-light font-theme overflow-y-auto">
+                    {{ problem_data['problem_content']|safe }}
+                </div>
+            </div>
+        </div>
+        <div class="col-6 h-100 p-0">
+            <div class="d-flex flex-column h-100 bg-dark-subtle rounded">
+                <div class="d-flex justify-content-between align-items-center p-2">
+                    <span>
+                        <select class="form-select form-select-sm" aria-label="Code language selector" id="code-lang-select">
+                            {% for lang in problem_data['code_snippets'] %}
+                                <option value="{{ lang["langSlug"] }}">{{ lang["lang"] }}</option>
+                            {% endfor %}
+                        </select>
+                    </span>
+                    <span>
+                        <button class="btn btn-success btn-sm ms-2" id="start-test-btn">
+                            <i class="fa-solid fa-play me-1"></i>
+                            Start Test
+                        </button>
+                        <button class="btn btn-success btn-sm ms-2" id="run-code-btn">
+                            <i class="fa-solid fa-play me-1"></i>
+                            Run
+                        </button>
+                    </span>
+                </div>
+                <div class="d-flex flex-column flex-grow-1" id="editor-container">
+                    <div id="editor" class="flex-grow-1 fs-6 font-theme">{{ problem_data['code_snippets'][0]['code'] }}</div>
+                    <small class="text-secondary font-theme" id="cursor-info">line 0, col 0</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-3 h-100 px-2">
+            <div class="d-flex flex-column h-100 justify-content-between">
+                <!--
+                <div class="d-flex flex-column h-50 bg-dark-subtle rounded p-3 mb-2 d-none">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <p class="fs-5 m-0 me-2">Event Log</p>
+                    </div>
+                    <div class="text-light d-flex flex-column overflow-y-auto" id="event-log">
+                    </div>
+                </div>
+                -->
+
+                <div class="d-flex flex-column h-100 bg-dark-subtle rounded p-3 overflow-hidden">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <p class="fs-5 m-0 me-2 mb-2">Test Cases</p>
+                    </div>
+                    <div class="d-none mb-2" id="compile-status-container">
+                        <span>
+                            <p class="m-0 me-2" id="run-status-msg">Accepted</p>
+                            <small class="text-secondary font-theme" id="run-status-time">20ms</small>
+                        </span>
+                        <div class="rounded bg-danger-subtle p-2 d-none mt-2" id="compile-error-container">
+                            <p class="text-danger font-theme" id="compile-error-msg">Error</p>
+                        </div>
+                    </div>
+                    <div class="text-light d-flex flex-column overflow-y-auto" id="custom-test-cases">
+                        <ul class="nav nav-pills" id="custom-tests-tabs" role="tablist">
+                        {% for i in range(problem_data['example_testcases_input']|length) %}
+                            {% if i == 0 %}
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link btn-sm active" id="test-{{i}}-tab" data-bs-toggle="tab" data-bs-target="#test-{{i}}-pane" type="button" role="tab" aria-controls="home-tab-pane" aria-selected="true">Test {{i}} <i class="fa-solid fa-check fa-2xs ms-1 test-status d-none" id="test-{{i}}-status"></i></button>
+                            </li>
+                            {% else %}
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link btn-sm" id="test-{{i}}-tab" data-bs-toggle="tab" data-bs-target="#test-{{i}}-pane" type="button" role="tab" aria-controls="home-tab-pane" aria-selected="false">Test {{i}} <i class="fa-solid fa-check fa-2xs ms-1 test-status d-none" id="test-{{i}}-status"></i></button>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        </ul>
+
+                        <div class="tab-content font-theme" id="custom-tests-content">
+                        {% for i in range(problem_data['example_testcases_input']|length) %}
+                            {% if i == 0 %}
+                            <div class="tab-pane test-case-tab-pane fade p-2 show active" id="test-{{i}}-pane" role="tabpanel" aria-labelledby="test-{{i}}-tab" tabindex="0">
+                            {% else %}
+                            <div class="tab-pane test-case-tab-pane fade p-2" id="test-{{i}}-pane" role="tabpanel" aria-labelledby="test-{{i}}-tab" tabindex="0">
+                            {% endif %}
+
+                                <!-- Params -->
+                                {% for j in range(problem_data['example_testcases_input'][i]|length) %}
+                                <div class="mb-3">
+                                    <label for="test-{{i}}-{{j}}" class="form-label text-secondary testcase-input">{{ problem_data['params'][j] }}</label>
+                                    <input type="text" class="form-control test-case-input" id="test-{{i}}-{{j}}" placeholder="input test case" value="{{ problem_data['example_testcases_input'][i][j] }}">
+                                </div>
+                                {% endfor %}
+
+                                <!-- Stdout, Expected stdout, Output and Expected Output -->
+                                <div class="mb-3 d-none code-result" id="test-{{i}}-stdout-container">
+                                    <label for="test-{{i}}-stdout" class="form-label text-secondary">Stdout</label>
+                                    <textarea type="text" class="form-control" id="test-{{i}}-stdout" placeholder="stdout" value="" disabled></textarea>
+                                </div>
+                                <div class="mb-3 d-none code-result" id="test-{{i}}-expected-stdout-container">
+                                    <label for="test-{{i}}-expected-stdout" class="form-label text-secondary">Expected Stdout</label>
+                                    <textarea type="text" class="form-control" id="test-{{i}}-expected-stdout" placeholder="expected stdout" value="" disabled></textarea>
+                                </div>
+                                <div class="mb-3 d-none code-result" id="test-{{i}}-output-container">
+                                    <label for="test-{{i}}-output" class="form-label text-secondary">Output</label>
+                                    <input type="text" class="form-control" id="test-{{i}}-output" placeholder="output" value="" disabled>
+                                </div>
+                                <div class="mb-3 d-none code-result" id="test-{{i}}-expected-output-container">
+                                    <label for="test-{{i}}-expected-output" class="form-label text-secondary">Expected Output</label>
+                                    <input type="text" class="form-control" id="test-{{i}}-expected-output" placeholder="expected output" value="" disabled>
+                                </div>
+
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    // Pass data from Flask to JavaScript
+    var problem_data = {{ problem_data|tojson }};
+    console.log(problem_data);
+</script>
+<script src="https://cdn.socket.io/3.1.1/socket.io.min.js"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='js/problem.js') }}"></script>
+
+{% endblock %}
